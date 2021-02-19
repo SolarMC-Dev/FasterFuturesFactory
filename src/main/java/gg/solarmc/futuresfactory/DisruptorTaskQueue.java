@@ -1,58 +1,32 @@
 package gg.solarmc.futuresfactory;
 
-import com.lmax.disruptor.EventPoller;
-import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.WaitStrategy;
+import gg.solarmc.futuresfactory.queue.ElementQueue;
+import gg.solarmc.futuresfactory.queue.PollableElementQueue;
+import gg.solarmc.futuresfactory.queue.QueueCreator;
 import space.arim.managedwaits.TaskQueue;
 
 class DisruptorTaskQueue implements TaskQueue {
 
-	private final RingBuffer<TaskEvent> ringBuffer;
-	private final EventPoller<TaskEvent> poller;
-	private final EventPoller.Handler<TaskEvent> handler;
+    private final PollableElementQueue<Runnable> elementQueue;
 
-	DisruptorTaskQueue(RingBuffer<TaskEvent> ringBuffer, EventPoller<TaskEvent> poller,
-					   EventPoller.Handler<TaskEvent> handler) {
-		this.ringBuffer = ringBuffer;
-		this.poller = poller;
-		this.handler = handler;
-	}
+    DisruptorTaskQueue(PollableElementQueue<Runnable> elementQueue) {
+        this.elementQueue = elementQueue;
+    }
 
-	@Override
-	public boolean addTask(Runnable task) {
-		long sequence = ringBuffer.next();
-		try {
-			TaskEvent event = ringBuffer.get(sequence);
-			event.setTask(task);
-		} finally {
-			ringBuffer.publish(sequence);
-		}
-		return true;
-	}
+    static TaskQueue create(WaitStrategy waitStrategy) {
+        ElementQueue<Runnable> queue = QueueCreator.create(waitStrategy, 512);
+        return new DisruptorTaskQueue(queue.attachHandler(Runnable::run));
+    }
 
-	@Override
-	public void pollAndRunAll() {
-		try {
-			poller.poll(handler);
-		} catch (Exception ex) {
-			throw new RuntimeException("Unexpected exception while polling sync tasks", ex);
-		}
-	}
+    @Override
+    public boolean addTask(Runnable task) {
+        elementQueue.add(task);
+        return true;
+    }
 
-	static TaskQueue create(WaitStrategy waitStrategy) {
-		RingBuffer<TaskEvent> ringBuffer = RingBuffer.createMultiProducer(TaskEvent::new, 512, waitStrategy);
-		EventPoller<TaskEvent> poller = ringBuffer.newPoller();
-		ringBuffer.addGatingSequences(poller.getSequence());
-		return new DisruptorTaskQueue(ringBuffer, poller, new HandlerImpl());
-	}
-
-	private static class HandlerImpl implements EventPoller.Handler<TaskEvent> {
-
-		@Override
-		public boolean onEvent(TaskEvent event, long sequence, boolean endOfBatch) throws Exception {
-			event.getTask().run();
-			event.setTask(null);
-			return true;
-		}
-	}
+    @Override
+    public void pollAndRunAll() {
+        elementQueue.pollUsingAttachedHandler();
+    }
 }
