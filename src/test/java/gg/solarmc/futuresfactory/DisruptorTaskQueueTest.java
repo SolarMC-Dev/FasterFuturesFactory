@@ -14,7 +14,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -31,10 +33,7 @@ public class DisruptorTaskQueueTest {
 				taskQueue::pollAndRunAll, 0L, 1L, TimeUnit.MILLISECONDS);
 	}
 
-	@Test
-	public void thrash() throws InterruptedException {
-		int threadCount = 100; // An order of magnitude larger than 100 starts to lag
-
+	private void runThreadBazaar(int threadCount, int hitsPerThread, Runnable action) throws InterruptedException {
 		CountDownLatch startLatch = new CountDownLatch(1);
 		CountDownLatch finishedLatch = new CountDownLatch(threadCount);
 		// On your marks
@@ -47,10 +46,8 @@ public class DisruptorTaskQueueTest {
 				} catch (InterruptedException ex) {
 					fail(ex);
 				}
-				for (int m = 0; m < 1000; m++) {
-					taskQueue.addTask(() -> {
-						// Super fast
-					});
+				for (int m = 0; m < hitsPerThread; m++) {
+					taskQueue.addTask(action);
 				}
 				finishedLatch.countDown();
 			});
@@ -63,6 +60,22 @@ public class DisruptorTaskQueueTest {
 
 		threadPool.shutdown();
 		assertTrue(threadPool.awaitTermination(10L, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void thrash() throws InterruptedException {
+		int threadCount = 100; // An order of magnitude larger than 100 starts to lag
+		int hitsPerThread = 1000;
+		runThreadBazaar(threadCount, hitsPerThread, () -> { /* Super fast */});
+	}
+
+	@Test
+	public void increment() throws InterruptedException {
+		AtomicInteger counter = new AtomicInteger();
+		int threadCount = 50;
+		int hitsPerThread = 1000;
+		runThreadBazaar(threadCount, hitsPerThread, counter::getAndIncrement);
+		assertEquals(threadCount * hitsPerThread, counter.get());
 	}
 
 	@AfterEach
