@@ -1,5 +1,8 @@
 module gg.solarmc.futuresfactory {
 
+	exports gg.solarmc.futuresfactory;
+	exports gg.solarmc.futuresfactory.queue;
+
 	requires space.arim.managedwaits;
 	/*
 	 * TODO: Fix this and change to com.lmax.disruptor
