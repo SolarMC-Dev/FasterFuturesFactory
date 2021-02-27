@@ -1,6 +1,5 @@
 package gg.solarmc.futuresfactory;
 
-import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -17,7 +16,8 @@ public class MainThreadSetup implements BeforeEachCallback, ParameterResolver {
 	@Override
 	public void beforeEach(ExtensionContext extensionContext) throws Exception {
 		extensionContext.getStore(namespace).put(ClosableScheduledExecutor.class,
-				new ClosableScheduledExecutor(Executors.newSingleThreadScheduledExecutor()));
+				new ClosableScheduledExecutor(Executors.newSingleThreadScheduledExecutor(
+						r -> new Thread(r, "main thread"))));
 	}
 
 	@Override

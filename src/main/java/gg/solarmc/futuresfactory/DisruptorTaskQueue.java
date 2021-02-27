@@ -8,14 +8,14 @@ import space.arim.managedwaits.TaskQueue;
 
 class DisruptorTaskQueue implements TaskQueue {
 
-    private final PollableElementQueue<Runnable> elementQueue;
+    final PollableElementQueue<Runnable> elementQueue;
 
     DisruptorTaskQueue(PollableElementQueue<Runnable> elementQueue) {
         this.elementQueue = elementQueue;
     }
 
-    static TaskQueue create(WaitStrategy waitStrategy) {
-        ElementQueue<Runnable> queue = QueueCreator.create(waitStrategy, 512);
+    static TaskQueue create(WaitStrategy waitStrategy, int capacityHint) {
+        ElementQueue<Runnable> queue = QueueCreator.create(waitStrategy, capacityHint);
         return new DisruptorTaskQueue(queue.attachHandler(Runnable::run));
     }
 
