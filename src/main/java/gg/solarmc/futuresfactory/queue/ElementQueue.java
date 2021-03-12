@@ -4,6 +4,8 @@ import com.lmax.disruptor.EventPoller;
 import com.lmax.disruptor.InsufficientCapacityException;
 import com.lmax.disruptor.RingBuffer;
 
+import java.util.concurrent.locks.LockSupport;
+
 /**
  * A slimmed down queue of elements, which does not support the full queue interface
  * of {@code java.util.Queue}
@@ -35,19 +37,36 @@ public class ElementQueue<E> {
      * @param element the element to add
      */
     public void add(E element) {
-        long sequence;
-        try {
-            sequence = ringBuffer.tryNext();
-        } catch (InsufficientCapacityException ex) {
-            synchronized (mutex) {
-                sequence = ringBuffer.next();
-            }
-        }
+        long sequence = acquireSequence();
         try {
             ElementEvent<E> event = ringBuffer.get(sequence);
             event.setElement(element);
         } finally {
             ringBuffer.publish(sequence);
+        }
+    }
+
+    private long acquireSequence() {
+        try {
+            return ringBuffer.tryNext();
+        } catch (InsufficientCapacityException ignored) { }
+        /*
+         * This approach makes some improvements to RingBuffer#next which better prioritize
+         * CPU cycles over latency. The disruptor is designed for extremely low latency,
+         * so RingBuffer#next will run a quite busy spin loop using LockSupport.parkNanos(1)
+         *
+         * The synchronization on enqueue when the buffer is full is an idea taken from log4j
+         * per an issue thread. The LockSupport.parkNanos(200L) spin loop is very similar to
+         * the loop in SleepingWaitStrategy. Both solutions halt the operations of enqueing
+         * threads, so the consuming thread may have time to process the buffer.
+         */
+        synchronized (mutex) {
+            while (true) {
+                try {
+                    return ringBuffer.tryNext();
+                } catch (InsufficientCapacityException ignored) { }
+                LockSupport.parkNanos(200L);
+            }
         }
     }
 
