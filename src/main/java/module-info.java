@@ -10,7 +10,4 @@ module gg.solarmc.futuresfactory {
 	 * disruptor 4.x will be a full module
 	 */
 	requires disruptor;
-
-	// Testing
-	requires static java.management;
 }
