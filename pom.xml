@@ -6,16 +6,23 @@
 	<parent>
 		<groupId>gg.solarmc</groupId>
 		<artifactId>solar-parent</artifactId>
-		<version>0.2.0</version>
+		<version>0.5.7</version>
 	</parent>
 
 	<artifactId>futures-factory</artifactId>
-	<version>0.3.1</version>
+	<version>0.3.1-SNAPSHOT</version>
 
 	<properties>
 		<junit.version>5.7.0</junit.version>
 		<slf4j.version>1.7.30</slf4j.version>
+
+		<managedwaits.version>0.1.3</managedwaits.version>
+		<disruptor.version>3.4.4</disruptor.version>
 	</properties>
+
+	<scm>
+		<developerConnection>scm:git:https://github.com/SolarMC-Dev/FasterFuturesFactory.git</developerConnection>
+	</scm>
 
 	<licenses>
 		<license>
@@ -41,12 +48,12 @@
 		<dependency>
 			<groupId>space.arim.managedwaits</groupId>
 			<artifactId>managedwaits</artifactId>
-			<version>0.1.3</version>
+			<version>${managedwaits.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.lmax</groupId>
 			<artifactId>disruptor</artifactId>
-			<version>3.4.2</version>
+			<version>${disruptor.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
