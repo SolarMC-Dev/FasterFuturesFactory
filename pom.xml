@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>futures-factory</artifactId>
-	<version>0.4.2</version>
+	<version>0.4.3-SNAPSHOT</version>
 
 	<properties>
 		<junit.version>5.7.0</junit.version>
@@ -21,7 +21,7 @@
 
 	<scm>
 		<developerConnection>scm:git:https://github.com/SolarMC-Dev/FasterFuturesFactory.git</developerConnection>
-	  <tag>0.4.2</tag>
+	  <tag>HEAD</tag>
   </scm>
 
 	<licenses>
